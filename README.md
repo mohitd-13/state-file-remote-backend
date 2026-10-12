@@ -1,6 +1,50 @@
 # STATE FILE REMOTE BACKEND
 
-State file remote backend let you store your terraform state into an aws S3 bucket. Storing state files into remote backend helps you maintain single source of truth between your local and remote state. By using remote backend you also enable features like state versioning, locking, server-side encryption and blocking public access.
+State file remote backend creates an aws S3 bucket that lets you store terraform state data. By storing Terraform state files into remote backend you can maintain single source of truth between your local and remote state. Using remote backend also enables features like state versioning, locking, server-side encryption and blocking public access.
+
+## ARCHITECTURE OVERVIEW
+
+The architecture is simple when a team member or a CI/CD pipeline apply new changes, the state acquires lock until the apply is in process, this prevent other team members or a CI/CD pipeline from modifying the state in the middle of an apply. Terraform refuses to proceed and reports who holds the lock and when it was acquired. Only one operation can hold the lock at a time. When the operation completes, the lock is released.
+
+## GETTING STARTED
+
+### PREREQUISITES
+
+**Install the following on your local machine before creating Remote Backend:**
+
+- [Terraform](https://developer.hashicorp.com/terraform/install) >= 1.10
+- [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) >= 2.x, configured with credentials (`aws configure`)
+
+### INSTALLATION
+
+1. Clone the repo, change directory and create terraform.tfvars file in the project root:
+
+    ```bash
+    git clone https://github.com/mohitd-13/state-file-remote-backend.git
+    cd state-file-remote-backend
+    touch terraform.tfvars
+    ```
+    
+2. Open the terraform.tfvars file in your code editor and populate the following variables:
+
+    ```text
+    aws_region        = "<Name of the aws region where you want to create the remote backend>"
+    state_bucket_name = "<Write a unique name for the S3 bucket>"
+    ```
+
+3. Initialize Terraform, validate and view the resources that will be created:
+
+    ```bash
+    terraform init
+    terraform validate
+    terraform plan
+    ```
+
+4. Apply Terraform configurations:
+
+    ```bash
+    terraform apply -auto-approve
+    ```
 
 ## WHY USE REMOTE BACKEND?
 
@@ -11,39 +55,4 @@ To solve these problems we use a remote backend, Terraform writes the state data
 - **State Locking** -
 - **State Versioning** -
 - **Server Side Encryption** -
-- **Public Access Block** - 
-
-## ARCHITECTURE OVERVIEW
-
-The architecture is simple we create a S3 bucket with S3 native state locking enabled. We create addition resources for the bucket like state versioning, server-side encryption, blocking public access and a kms key which perform server-side encryption on state files.
-
-## GETTING STARTED
-
-### PREREQUISITES
-
-**Before creating remote backend in your AWS account, you need to make sure that you have the following installed on your local machine:**
-
-- [Terraform](https://developer.hashicorp.com/terraform/install) >= 1.10
-- [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) >= 2.x, configured with credentials (`aws configure`)
-
-### INSTALLATION
-
-1. Clone the repo and change directory
-
-    ```bash
-    git clone 
-    ```
-
-2. Find out your github repo sub prefix that will be used in your IAM Role trust policy subject:
-
-    ```bash
-    
-3. Create terraform.tfvars file in project root:
-4. Open the terraform.tfvars in your code editor:
-5. Checkout the resources that will be created:
-6. Run terraform apply:
-## CI/CD
-
-## CONTRIBUTION
-
-## LICENSE
+- **Public Access Block** -
