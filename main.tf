@@ -7,7 +7,7 @@ resource "aws_s3_bucket" "state_bucket" {
     prevent_destroy = true
   }
 
-  tags = merge(var.tags, { Name = "terraform-statefile-bucket" })
+  tags = merge(var.tags, { Name = "state-file-bucket" })
 }
 
 # Enable versioning for the bucket

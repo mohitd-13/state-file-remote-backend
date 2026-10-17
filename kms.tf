@@ -8,7 +8,7 @@ resource "aws_kms_key" "state_bucket_kms" {
     prevent_destroy = true
   }
 
-  tags = merge(var.tags, { Name = "terraform-statefile-bucket-kms" })
+  tags = merge(var.tags, { Name = "terraform-state-file-bucket-kms" })
 }
 
 # Alias for kms key, instead of using kms key id
