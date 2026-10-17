@@ -1,0 +1,64 @@
+name: Validate Infra
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'main'
+    paths:
+      - '**.tf'
+      - '.github/workflows/validate.yml'
+
+env:
+  TF_VERSION: 1.15.1
+
+jobs:
+  validate:
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Infra Code
+        uses: actions/checkout@v6.0.1
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@633666f66e0061ca3b725c73b2ec20cd13a8fdd1
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Perform Format Check
+        run: terraform fmt -check
+
+      - name: Initialize and Validate Terraform
+        run: |
+            terraform init
+            terraform validate
+
+      - name: Setup TFLint
+        uses: terraform-linters/setup-tflint@6e1e0642c0289bd619021bf6b34e3c08ed1e005a
+        with:
+          tflint_version: v0.52.0
+          cache: true
+
+      - name: Initialize and Run TFLint
+        run: |
+            tflint --init
+            tflint -f compact
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Scan for Security Issues
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          framework: terraform
+          output_format: cli,sarif
+          output_file_path: console,results.sarif
+
+      - name: Upload SARIF File
+        uses: github/codeql-action/upload-sarif@v4
+        if: success() || failure()
+        with:
+          sarif_file: results.sarif
