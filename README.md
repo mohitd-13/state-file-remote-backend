@@ -2,18 +2,31 @@
 
 State File Remote Backend project creates an AWS S3 bucket that lets you store terraform state data remotely. Storing Terraform state files remotely gives you a single source of truth between your local machine, your teammates and your pipelines, along with state versioning, locking, server-side encryption and blocking public access.
 
+[![Terraform](https://img.shields.io/badge/Terraform-%3E%3D%201.10-7B42BC?logo=terraform&logoColor=white)](https://developer.hashicorp.com/terraform/install)
+[![AWS](https://img.shields.io/badge/AWS-S3%20%2B%20KMS-FF9900)](https://aws.amazon.com/)
 
-## 🏗️ ARCHITECTURE OVERVIEW
+## 🏗️ Architecture Overview
 
 ![Alt Text](./assets/state-locking.png)
 
 When a team member or a CI/CD pipeline applies changes, the state acquires a lock for the duration of the apply. This prevent other team members or pipelines from modifying the state in the middle of an operation. If the state is already locked, Terraform refuses to proceed and reports who holds the lock and when it was acquired. Only one operation can hold the lock at a time, and the lock is released when the operation completes.
 
+## 📦 What gets Created
+ 
+| Resource | Purpose |
+| --- | --- |
+| S3 bucket | Stores Terraform state files |
+| Bucket versioning | Keeps every version of the state so you can roll back |
+| Server-side encryption | Encrypts state at rest using the KMS key |
+| Public access block | Guarantees the bucket can never be made public |
+| KMS key | Customer managed key (CMK) used to encrypt the state |
+| KMS alias | Friendly name (`alias/<name>`) for the key |
+ 
+The S3 bucket and KMS key are protected with `lifecycle { prevent_destroy = true }`, because losing either one means losing your state.
 
-## 🚀 GETTING STARTED
+## 🚀 Getting Started
 
-
-### 🧰 PREREQUISITES
+### 🧰 Prerequisites
 
 **Install the following on your local machine before creating remote Backend:**
 
@@ -22,8 +35,7 @@ When a team member or a CI/CD pipeline applies changes, the state acquires a loc
 
 Your AWS credentials need permission to create S3 buckets, KMS keys and IAM roles/policies.
 
-
-### 🛠️ INSTALLATION
+### 🛠️ Installation
 
 1. Clone the repo, change directory and create a  `terraform.tfvars` file in the project root:
 
@@ -40,9 +52,9 @@ Your AWS credentials need permission to create S3 buckets, KMS keys and IAM role
     state_bucket_name = "<Write a unique name for the S3 bucket>"
     ```
 
-    > [!NOTE]
-    > S3 bucket names are globally unique, so choose something specific to you or your organisation.
-    > `terraform.tfvars` is listed in `.gitignore` and must never be committed.
+> [!NOTE]
+> S3 bucket names are globally unique, so choose something specific to you or your organisation.
+> `terraform.tfvars` is listed in `.gitignore` and must never be committed.
 
 3. Initialize Terraform, validate and view the resources that will be created:
 
@@ -58,10 +70,7 @@ Your AWS credentials need permission to create S3 buckets, KMS keys and IAM role
     terraform apply -auto-approve
     ```
 
-    Review the plan and type `yes` to confirm. This is foundational infrastructure, so an interactive confirmation is safer than `-auto-approve`.
-
-
-### 📋 INPUTS
+### 📋 Inputs
 
 | Variable | Description | Required |
 | --- | --- | --- |
@@ -70,40 +79,38 @@ Your AWS credentials need permission to create S3 buckets, KMS keys and IAM role
 | `kms_deletion_window` | Number of days after a kms key will be deleted | No |
 | `tags` | Common tags apply to all resources | No |
 
-
-### 📤 OUTPUTS
+### 📤 Outputs
 
 After `terraform apply`, use the values below to configure your other projects and pipelines. Replace this section with your actual output names.
 
 | Output | Description |
 | --- | --- |
 | `state_bucket_name` | Name of the S3 bucket to reference in `backend` blocks |
+| `state_bucket_arn` | ARN of the S3 bucket that store state files |
 | `kms_key_alias` | Alias of the KMS key to reference in `backend` block |
+| `kms_key_arn` | ARN of the KMS key that encrypt the state |
 
+# 📚 Why and How to Use the Backend
 
-## 📑 WHY AND HOW TO USE BACKEND
+Learn why a remote backend is worth having, and how to connect your other Terraform projects to it, in [BACKEND.md](./docs/BACKEND.md).
 
-Find out why we need remote backend at all and how you can integrate remote backend capabilities into your Terraform infrastructure projects [BACKEND](./docs/BACKEND.md).
-
-
-## 💣 DESTROYING THE BACKEND
+## 💣 Destroying the Backend
 
 Because of `prevent_destroy`, `terraform destroy` will fail on the bucket and KMS key by design. To tear the backend down on purpose:
 
 1. Migrate every project using this backend back to local state (`terraform init -migrate-state`).
 2. Empty the bucket, including all object versions.
 3. Remove the `prevent_destroy` setting and apply the change.
-4. Run `terraform destroy`. Note that KMS keys are scheduled for deletion after a waiting period 10 days rather than removed immediately.
+4. Run `terraform destroy`. Note that KMS keys are scheduled for deletion after a waiting period (10 days) rather than removed immediately.
 
+## 🔄 Continuous Integration
 
-## 🔄 CONTINUOUS INTEGRATION
+This project doesn't need continuous deployment, so the CI workflow only validates the code. Every time changes are pushed, it runs format checks, lints the code with [tflint](https://github.com/terraform-linters/tflint), and scans it with [Checkov](https://www.checkov.io/). The scan results are uploaded to GitHub code scanning. The workflow lives in `.github/workflows/`.
 
+## 🤝 Contribution
 
-## 🤝 CONTRIBUTING
+Once the backend is deployed it rarely needs changes, so pull requests are not expected. If you find a bug or have an idea, please [open an issue](https://github.com/mohitd-13/state-file-remote-backend/issues).
 
-Once the project is up there is hardly any changes needed, so no PR required.
-
-
-## 📄 LICENSE
+## 📄 License
 
 This project is licensed under the [MIT License](LICENSE).
